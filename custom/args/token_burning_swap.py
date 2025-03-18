@@ -61,17 +61,23 @@ class TokenBurningSwapCalculator(ArgumentCalculator):
         if not token_burning_address or not base_token_address:
             raise ValueError("token_burning_address and base_token_address are required")
         
-        # Connect to blockchain
-        web3 = Web3(Web3.HTTPProvider(rpc_url)) if rpc_url else None
-        
         try:
-            # If no RPC URL was provided, try to use the network from the job
-            if not web3 or not web3.is_connected():
+            # Get Web3 provider - Use the network from the job input data if rpc_url is not provided
+            web3 = None
+            if rpc_url:
+                web3 = Web3(Web3.HTTPProvider(rpc_url))
+                if not web3.is_connected():
+                    logger.warning(f"Could not connect to provided RPC URL: {rpc_url}")
+                    web3 = None
+            
+            # If we don't have a connected web3 instance, try to use the network from the job
+            if web3 is None:
                 from scheduler.utils.web3_utils import get_web3_provider
                 from scheduler.models import Network
                 
                 # Default to BSC network if not specified
                 network = input_data.get("network", Network.BSC)
+                logger.info(f"Using default network provider for: {network}")
                 web3 = get_web3_provider(network)
             
             # Load ERC20 ABI (minimal for balance checking)
