@@ -15,7 +15,7 @@ JOBS = [
         method_name="mint",
         method_args=[
             # recipient address
-            "0x2F5BFB8eBcb07C2ee0a210c59453D6A6f1Bd50a6"
+            "0x7DB1c089074CCe43fAE87Fa28D1Fef79558918d2"
         ],
         schedule="every 10 to 14 hours",
         gas_limit=120000,
@@ -26,7 +26,7 @@ JOBS = [
     ContractJobCustomArgs(
         name="Random CL8Y Swap to Burn And LP",
         network=Network.BSC,
-        contract_address="0x2F5BFB8eBcb07C2ee0a210c59453D6A6f1Bd50a6",  # TokenBurningAndLP contract
+        contract_address="0x7DB1c089074CCe43fAE87Fa28D1Fef79558918d2",  # TokenBurningAndLP contract
         contract_abi_path="abis/TokenBurningAndLP.json",
         method_name="swapBaseTokenForSubjectToken",
         # Updated to use random interval scheduling
@@ -34,7 +34,7 @@ JOBS = [
         args_module_path="token_burning_swap",
         args_input={
             # Address of the token burning contract which holds the base tokens
-            "token_burning_address": "0x2F5BFB8eBcb07C2ee0a210c59453D6A6f1Bd50a6",
+            "token_burning_address": "0x7DB1c089074CCe43fAE87Fa28D1Fef79558918d2",
             # Address of the base token contract
             "base_token_address": "0xE68b79e51bf826534Ff37AA9CeE71a3842ee9c70",
             # Random range for swap amount (before applying decimals)
