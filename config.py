@@ -30,7 +30,7 @@ JOBS = [
         contract_abi_path="abis/TokenBurningAndLP.json",
         method_name="swapBaseTokenForSubjectToken",
         # Updated to use random interval scheduling
-        schedule="every 6 to 12 hours",
+        schedule="every 4 to 8 hours",
         args_module_path="token_burning_swap",
         args_input={
             # Address of the token burning contract which holds the base tokens
@@ -39,7 +39,7 @@ JOBS = [
             "base_token_address": "0xE68b79e51bf826534Ff37AA9CeE71a3842ee9c70",
             # Random range for swap amount (before applying decimals)
             "rand_min": 58,
-            "rand_max": 154,
+            "rand_max": 212,
             # Token decimals (default is 18 if not specified)
             "decimals": 18,
             # Network for web3 provider (defaults to BSC if not specified)
