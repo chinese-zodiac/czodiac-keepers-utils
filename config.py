@@ -65,7 +65,25 @@ JOBS = [
         method_name="performUpkeep",
         method_args=["0x"],  # Empty bytes parameter
         schedule="every saturday at 00:00",
-        gas_limit=250000,
+        gas_limit=1200000,
+        enabled=True,
+        validate_before_send=True,
+        retry_config={
+            "max_retries": 3,
+            "retry_delay": 60  # seconds
+        }
+    ),
+    
+    # GemBurnPay weekly performUpkeep job
+    ContractJob(
+        name="GemBurnPay Weekly Upkeep",
+        network=Network.BSC,
+        contract_address="0x6B9b66A7E8340C4357bF68a0E2451d851e27a47F",
+        contract_abi_path="abis/GemBurnPay.json",
+        method_name="performUpkeep",
+        method_args=["0x"],  # Empty bytes parameter
+        schedule="every saturday at 01:00",
+        gas_limit=500000,
         enabled=True,
         validate_before_send=True,
         retry_config={
