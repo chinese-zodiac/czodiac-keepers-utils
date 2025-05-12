@@ -55,4 +55,22 @@ JOBS = [
             "retry_delay": 60  # seconds
         }
     ),
+    
+    # GemBurnerV3 weekly performUpkeep job
+    ContractJob(
+        name="GemBurnerV3 Weekly Upkeep",
+        network=Network.BSC,
+        contract_address="0xe7aB4C46491D2ecc5a7c5D9d341342B8FAc6e81F",
+        contract_abi_path="abis/GemBurnerV3.json",
+        method_name="performUpkeep",
+        method_args=["0x"],  # Empty bytes parameter
+        schedule="every saturday at 00:00",
+        gas_limit=250000,
+        enabled=True,
+        validate_before_send=True,
+        retry_config={
+            "max_retries": 3,
+            "retry_delay": 60  # seconds
+        }
+    ),
 ] 
