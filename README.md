@@ -85,6 +85,37 @@ job = ContractJobCustomArgs(
 )
 ```
 
+### Multi-Job Sequences
+
+Execute multiple contract jobs in sequence with `ContractJobMulti`. See `config.example.py` for a complete example.
+
+```python
+from scheduler.models import ContractJobMulti
+
+multi_job = ContractJobMulti(
+    name="daily_token_operations",
+    jobs=[burn_job, claim_job, swap_job],  # List of ContractJob/ContractJobCustomArgs
+    schedule="every day at 12:00",  # Schedule applies to the entire sequence
+    enabled=True,
+    stop_on_failure=True,  # Stop if any job fails
+    delay_between_jobs=10.0,  # Wait 10 seconds between each job
+    retry_config={"max_retries": 3, "retry_delay": 60}
+)
+```
+
+#### Multi-Job Configuration Options
+
+- `jobs`: List of `ContractJob` or `ContractJobCustomArgs` to execute in sequence
+- `stop_on_failure`: If `True`, stops execution when any job fails; if `False`, continues with remaining jobs
+- `delay_between_jobs`: Optional delay in seconds between job executions
+- `retry_config`: Retry configuration applies to the entire multi-job sequence
+
+#### Use Cases for Multi-Jobs
+
+1. **Sequential Operations**: Execute related contract calls that must happen in order (e.g., approve → transfer → claim)
+2. **Multi-Network Operations**: Perform the same operation across different blockchain networks
+3. **Complex Workflows**: Chain together multiple smart contract interactions with error handling
+
 ## Creating Custom Argument Calculators
 
 Place your custom argument calculator modules in the `custom/args/` directory. Each module should provide a `calculate_args` function:

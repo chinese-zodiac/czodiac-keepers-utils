@@ -14,7 +14,7 @@ from web3.contract import Contract
 from web3.types import TxParams, Wei
 from web3.exceptions import ContractLogicError, TransactionNotFound
 
-from ..models import Network, ContractJob, ContractJobCustomArgs
+from ..models import Network, ContractJob, ContractJobCustomArgs, ContractJobMulti, AnyJob
 from ..config import get_network_config, get_private_key, TRANSACTION_CONFIG
 
 logger = logging.getLogger(__name__)
@@ -364,4 +364,87 @@ def execute_contract_method(job: ContractJob) -> Tuple[bool, Optional[str], Opti
             
     except Exception as e:
         logger.exception(f"Error executing contract method: {str(e)}")
-        return False, None, str(e) 
+        return False, None, str(e)
+
+
+def execute_multi_job(multi_job: ContractJobMulti) -> Tuple[bool, List[Tuple[str, bool, Optional[str], Optional[str]]], Optional[str]]:
+    """
+    Execute multiple contract jobs in sequence.
+    
+    Args:
+        multi_job: Multi-job configuration containing list of jobs to execute
+        
+    Returns:
+        Tuple of (overall_success, job_results, error_message)
+        where job_results is a list of (job_name, success, tx_hash, error) for each job
+    """
+    logger.info(f"Executing multi-job '{multi_job.name}' with {len(multi_job.jobs)} jobs")
+    
+    job_results: List[Tuple[str, bool, Optional[str], Optional[str]]] = []
+    overall_success = True
+    
+    try:
+        for i, job in enumerate(multi_job.jobs):
+            if not job.enabled:
+                logger.info(f"Skipping disabled job: {job.name}")
+                job_results.append((job.name, True, None, "Skipped - disabled"))
+                continue
+            
+            logger.info(f"Executing job {i+1}/{len(multi_job.jobs)}: {job.name}")
+            
+            # Execute the individual job
+            success, tx_hash, error = execute_contract_method(job)
+            job_results.append((job.name, success, tx_hash, error))
+            
+            if not success:
+                overall_success = False
+                logger.error(f"Job '{job.name}' failed: {error}")
+                
+                if multi_job.stop_on_failure:
+                    logger.warning(f"Stopping multi-job '{multi_job.name}' due to failure")
+                    break
+            else:
+                logger.info(f"Job '{job.name}' completed successfully")
+            
+            # Add delay between jobs if specified
+            if multi_job.delay_between_jobs and i < len(multi_job.jobs) - 1:
+                logger.info(f"Waiting {multi_job.delay_between_jobs} seconds before next job...")
+                time.sleep(multi_job.delay_between_jobs)
+        
+        if overall_success:
+            logger.info(f"Multi-job '{multi_job.name}' completed successfully")
+        else:
+            logger.warning(f"Multi-job '{multi_job.name}' completed with some failures")
+        
+        return overall_success, job_results, None
+        
+    except Exception as e:
+        logger.exception(f"Error executing multi-job '{multi_job.name}': {str(e)}")
+        return False, job_results, str(e)
+
+
+def execute_any_job(job: AnyJob) -> Tuple[bool, Optional[str], Optional[str]]:
+    """
+    Execute any type of job (single contract job or multi-job).
+    
+    Args:
+        job: Job configuration (ContractJob, ContractJobCustomArgs, or ContractJobMulti)
+        
+    Returns:
+        Tuple of (success, transaction hash or summary, error message)
+    """
+    if isinstance(job, ContractJobMulti):
+        overall_success, job_results, error = execute_multi_job(job)
+        
+        # Create summary of results for multi-job
+        if overall_success:
+            successful_jobs = [result[0] for result in job_results if result[1]]
+            summary = f"Multi-job completed: {len(successful_jobs)}/{len(job_results)} jobs successful"
+            return True, summary, None
+        else:
+            failed_jobs = [result[0] for result in job_results if not result[1]]
+            summary = f"Multi-job failed: {len(failed_jobs)} job(s) failed"
+            return False, summary, error
+    else:
+        # Single contract job
+        return execute_contract_method(job) 

@@ -2,10 +2,31 @@
 Sample job configuration for the Web3 Contract Scheduler.
 """
 
-from scheduler.models import ContractJob, ContractJobCustomArgs, Network
+from scheduler.models import ContractJob, ContractJobCustomArgs, Network, ContractJobMulti
+
+Cl8yChartBoostV2 = ContractJob(
+    name="Cl8yChartBoostV2",
+    network=Network.BSC,
+    contract_address="0xD7f213cf9D017FF2D130a4B34630Dcb5b8D66d85",
+    contract_abi_path="abis/ChartBoostV2.json",
+    method_name="run",
+    method_args=[
+        "0x8F452a1fdd388A45e1080992eFF051b4dd9048d2"
+    ],
+    schedule="every 3 to 5 hours",
+    gas_limit=550000,
+    enabled=True,
+    validate_before_send=True,
+    retry_config={
+        "max_retries": 3,
+        "retry_delay": 60  # seconds
+    }
+)
+
 
 # List of jobs to register with the scheduler
 JOBS = [
+    Cl8yChartBoostV2,
     # Mint CZUSD for CL8Y Token Burning and LP every 12 hours
     ContractJob(
         name="Mint CZUSD for CL8Y Token Burning and LP",
@@ -20,40 +41,58 @@ JOBS = [
         schedule="every 10 to 14 hours",
         gas_limit=120000,
         enabled=True,
-    ),
-
-    # Random swap job using custom argument calculator
-    ContractJobCustomArgs(
-        name="Random CL8Y Swap to Burn And LP",
-        network=Network.BSC,
-        contract_address="0x4a395302C16a13baC55f739ee95647887e48d655",  # TokenBurningAndLP contract
-        contract_abi_path="abis/TokenBurningAndLP.json",
-        method_name="swapBaseTokenForSubjectToken",
-        # Updated to use random interval scheduling
-        schedule="every 3 to 7 hours",
-        args_module_path="token_burning_swap",
-        args_input={
-            # Address of the token burning contract which holds the base tokens
-            "token_burning_address": "0x4a395302C16a13baC55f739ee95647887e48d655",
-            # Address of the base token contract
-            "base_token_address": "0xE68b79e51bf826534Ff37AA9CeE71a3842ee9c70",
-            # Random range for swap amount (before applying decimals)
-            "rand_min": 68,
-            "rand_max": 232,
-            # Token decimals (default is 18 if not specified)
-            "decimals": 18,
-            # Network for web3 provider (defaults to BSC if not specified)
-            "network": Network.BSC
-        },
-        gas_limit=350000,
-        enabled=True,
-        # Validate transaction would succeed before sending
         validate_before_send=True,
-        # Retry configuration
         retry_config={
             "max_retries": 3,
             "retry_delay": 60  # seconds
         }
+    ),
+
+    # Random swap job using custom argument calculator
+    ContractJobMulti(
+        name="BBLP_CL8Y",
+        jobs=[
+            Cl8yChartBoostV2,
+            ContractJobCustomArgs(
+                name="Conduct buy, burn, and LP",
+                    network=Network.BSC,
+                    contract_address="0x4a395302C16a13baC55f739ee95647887e48d655",  # TokenBurningAndLP contract
+                    contract_abi_path="abis/TokenBurningAndLP.json",
+                    method_name="swapBaseTokenForSubjectToken",
+                args_module_path="token_burning_swap",
+                args_input={
+                    # Address of the token burning contract which holds the base tokens
+                    "token_burning_address": "0x4a395302C16a13baC55f739ee95647887e48d655",
+                    # Address of the base token contract
+                    "base_token_address": "0xE68b79e51bf826534Ff37AA9CeE71a3842ee9c70",
+                    # Random range for swap amount (before applying decimals)
+                    "rand_min": 68,
+                    "rand_max": 232,
+                    # Token decimals (default is 18 if not specified)
+                    "decimals": 18,
+                    # Network for web3 provider (defaults to BSC if not specified)
+                    "network": Network.BSC
+                },
+                gas_limit=350000,
+                enabled=True,
+                # Validate transaction would succeed before sending
+                validate_before_send=True,
+                # Retry configuration
+                retry_config={
+                    "max_retries": 3,
+                    "retry_delay": 60  # seconds
+                }
+            ),
+            Cl8yChartBoostV2,
+        ],
+        schedule="every 3 to 7 hours",
+        enabled=True,
+        stop_on_failure=True,  # Stop if any job fails
+        delay_between_jobs=5.0,  # Wait 5 seconds between each job
+        retry_config={
+            "max_retries": 3,
+            "retry_delay": 60
+        },
     ),
     
     # GemBurnerV3 weekly performUpkeep job

@@ -8,22 +8,22 @@ import logging
 import schedule
 from typing import Dict, List, Optional, Callable, Any, Tuple
 
-from .models import ContractJob
-from .utils import execute_contract_method, setup_logging
+from .models import ContractJob, ContractJobMulti, AnyJob
+from .utils import execute_any_job, setup_logging
 
 # Initialize the logger
 logger = setup_logging(__name__)
 
 # Store for registered jobs
-_jobs: Dict[str, ContractJob] = {}
+_jobs: Dict[str, AnyJob] = {}
 
 
-def register_job(job: ContractJob) -> None:
+def register_job(job: AnyJob) -> None:
     """
     Register a contract job for scheduling.
     
     Args:
-        job: Contract job configuration
+        job: Contract job configuration (ContractJob, ContractJobCustomArgs, or ContractJobMulti)
     """
     if job.name in _jobs:
         logger.warning(f"Job '{job.name}' already registered, overwriting")
@@ -32,7 +32,7 @@ def register_job(job: ContractJob) -> None:
     logger.info(f"Registered job: {job.name}")
 
 
-def register_jobs(jobs: List[ContractJob]) -> None:
+def register_jobs(jobs: List[AnyJob]) -> None:
     """
     Register multiple contract jobs at once.
     
@@ -60,23 +60,28 @@ def _job_executor(job_name: str) -> Callable[[], None]:
             return
             
         logger.info(f"Executing job: {job_name}")
-        success, tx_hash, error = execute_contract_method(job)
+        success, result, error = execute_any_job(job)
         
         if success:
-            logger.info(f"Job '{job_name}' completed successfully. Tx hash: {tx_hash}")
+            logger.info(f"Job '{job_name}' completed successfully. Result: {result}")
         else:
             logger.error(f"Job '{job_name}' failed: {error}")
     
     return execute
 
 
-def _schedule_job(job: ContractJob) -> None:
+def _schedule_job(job: AnyJob) -> None:
     """
     Schedule a job according to its schedule expression.
     
     Args:
-        job: Contract job configuration
+        job: Job configuration (ContractJob, ContractJobCustomArgs, or ContractJobMulti)
     """
+    # Skip jobs without a schedule (they are part of multi-jobs)
+    if not job.schedule:
+        logger.debug(f"Skipping scheduling for job '{job.name}' - no schedule defined (likely part of multi-job)")
+        return
+    
     # Create the job executor
     executor = _job_executor(job.name)
     

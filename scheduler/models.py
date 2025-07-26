@@ -41,7 +41,7 @@ class ContractJob(BaseModel):
     contract_abi_path: str
     method_name: str
     method_args: List[Any] = Field(default_factory=list)
-    schedule: str
+    schedule: Optional[str] = None
     gas_limit: Optional[int] = None
     gas_price: Optional[int] = None
     value: int = 0
@@ -77,6 +77,38 @@ class ContractJobCustomArgs(ContractJob):
     method_args: Optional[List[Any]] = None
 
 
+class ContractJobMulti(BaseModel):
+    """
+    Model representing a scheduled execution of multiple contract method calls in sequence.
+    
+    This job type executes a list of ContractJob or ContractJobCustomArgs instances
+    in the specified order. Each job can have different networks, contracts, and parameters.
+    
+    Attributes:
+        name: Human-readable name for the multi-job
+        jobs: List of contract jobs to execute in sequence
+        schedule: Schedule expression (e.g., "daily at 12:00")
+        enabled: Whether this multi-job is enabled
+        stop_on_failure: If True, stops execution when any job fails; if False, continues with remaining jobs
+        delay_between_jobs: Optional delay in seconds between job executions
+        retry_config: Configuration for retry attempts (applies to the entire multi-job)
+    """
+    name: str
+    jobs: List[Union[ContractJob, ContractJobCustomArgs]]
+    schedule: str
+    enabled: bool = True
+    stop_on_failure: bool = True
+    delay_between_jobs: Optional[float] = None
+    retry_config: Optional[Dict[str, Any]] = None
+    
+    @validator("jobs")
+    def validate_jobs_not_empty(cls, v: List[Union[ContractJob, ContractJobCustomArgs]]) -> List[Union[ContractJob, ContractJobCustomArgs]]:
+        """Validate that at least one job is provided."""
+        if not v:
+            raise ValueError("At least one job must be provided in jobs list")
+        return v
+
+
 class NetworkConfig(BaseModel):
     """Configuration for a blockchain network."""
     rpc_url: str
@@ -90,4 +122,8 @@ class TransactionConfig(BaseModel):
     default_gas_price: Optional[int] = None
     gas_price_multiplier: float = 1.0
     max_retries: int = 3
-    retry_delay: int = 30  # seconds 
+    retry_delay: int = 30  # seconds
+
+
+# Type alias for any job type
+AnyJob = Union[ContractJob, ContractJobCustomArgs, ContractJobMulti] 
