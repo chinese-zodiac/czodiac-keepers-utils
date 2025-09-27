@@ -4,7 +4,7 @@ Data models for contract job scheduling.
 
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, model_validator
 
 
 class Network(str, Enum):
@@ -112,8 +112,24 @@ class ContractJobMulti(BaseModel):
 class NetworkConfig(BaseModel):
     """Configuration for a blockchain network."""
     rpc_url: str
+    rpc_urls: List[str] = Field(default_factory=list)
     chain_id: Optional[int] = None
     explorer_url: Optional[str] = None
+
+    @model_validator(mode="after")
+    def ensure_rpc_urls(self) -> "NetworkConfig":
+        """Ensure primary and fallback RPC URLs are populated consistently."""
+        unique_urls: List[str] = []
+        for url in [self.rpc_url, *self.rpc_urls]:
+            if url and url not in unique_urls:
+                unique_urls.append(url)
+
+        if not unique_urls:
+            raise ValueError("At least one RPC URL must be provided")
+
+        self.rpc_url = unique_urls[0]
+        self.rpc_urls = unique_urls
+        return self
 
 
 class TransactionConfig(BaseModel):

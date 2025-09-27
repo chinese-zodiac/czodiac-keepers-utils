@@ -38,7 +38,7 @@ JOBS = [
             # recipient address
             "0x4a395302C16a13baC55f739ee95647887e48d655"
         ],
-        schedule="every 10 to 14 hours",
+        schedule="every 5 to 7 hours",
         gas_limit=120000,
         enabled=True,
         validate_before_send=True,
@@ -85,7 +85,7 @@ JOBS = [
             ),
             Cl8yChartBoostV2,
         ],
-        schedule="every 3 to 7 hours",
+        schedule="every 2 to 4 hours",
         enabled=True,
         stop_on_failure=True,  # Stop if any job fails
         delay_between_jobs=5.0,  # Wait 5 seconds between each job

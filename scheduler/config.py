@@ -3,12 +3,30 @@ Configuration handling for the scheduler application.
 """
 
 import os
-from typing import Dict, Optional
+from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from .models import Network, NetworkConfig, TransactionConfig
 
 # Load environment variables
 load_dotenv()
+
+
+def _parse_rpc_urls(raw_value: str) -> List[str]:
+    """Parse a comma-separated list of RPC URLs into a cleaned list."""
+    if not raw_value:
+        return []
+
+    return [url.strip() for url in raw_value.split(",") if url.strip()]
+
+
+def _build_network_kwargs(raw_value: str) -> Dict[str, Any]:
+    """Build keyword arguments for NetworkConfig from environment input."""
+    urls = _parse_rpc_urls(raw_value)
+
+    if not urls:
+        return {"rpc_url": "", "rpc_urls": []}
+
+    return {"rpc_url": urls[0], "rpc_urls": urls}
 
 
 def get_network_config(network: Network) -> NetworkConfig:
@@ -26,27 +44,27 @@ def get_network_config(network: Network) -> NetworkConfig:
     """
     network_configs = {
         Network.ETHEREUM: NetworkConfig(
-            rpc_url=os.getenv("ETH_RPC_URL", ""),
+            **_build_network_kwargs(os.getenv("ETH_RPC_URL", "")),
             chain_id=1,
             explorer_url="https://etherscan.io"
         ),
         Network.BSC: NetworkConfig(
-            rpc_url=os.getenv("BSC_RPC_URL", ""),
+            **_build_network_kwargs(os.getenv("BSC_RPC_URL", "")),
             chain_id=56,
             explorer_url="https://bscscan.com"
         ),
         Network.POLYGON: NetworkConfig(
-            rpc_url=os.getenv("POLYGON_RPC_URL", ""),
+            **_build_network_kwargs(os.getenv("POLYGON_RPC_URL", "")),
             chain_id=137,
             explorer_url="https://polygonscan.com"
         ),
         Network.ARBITRUM: NetworkConfig(
-            rpc_url=os.getenv("ARBITRUM_RPC_URL", ""),
+            **_build_network_kwargs(os.getenv("ARBITRUM_RPC_URL", "")),
             chain_id=42161,
             explorer_url="https://arbiscan.io"
         ),
         Network.OPTIMISM: NetworkConfig(
-            rpc_url=os.getenv("OPTIMISM_RPC_URL", ""),
+            **_build_network_kwargs(os.getenv("OPTIMISM_RPC_URL", "")),
             chain_id=10,
             explorer_url="https://optimistic.etherscan.io"
         ),

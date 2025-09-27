@@ -15,29 +15,16 @@ from web3.types import TxParams, Wei
 from web3.exceptions import ContractLogicError, TransactionNotFound
 
 from ..models import Network, ContractJob, ContractJobCustomArgs, ContractJobMulti, AnyJob
-from ..config import get_network_config, get_private_key, TRANSACTION_CONFIG
+from ..config import get_private_key, TRANSACTION_CONFIG
+from .web3_service import web3_provider_service
 
 logger = logging.getLogger(__name__)
 
 
 def get_web3_provider(network: Network) -> Web3:
-    """
-    Get a Web3 provider for the specified network.
-    
-    Args:
-        network: The blockchain network to connect to
-        
-    Returns:
-        Web3 provider instance
-    """
-    network_config = get_network_config(network)
-    web3 = Web3(Web3.HTTPProvider(network_config.rpc_url))
-    
-    if not web3.is_connected():
-        raise ConnectionError(f"Failed to connect to {network.value} network")
-        
-    logger.debug(f"Connected to {network.value} network: {network_config.rpc_url}")
-    return web3
+    """Return a shared Web3 provider for the specified network."""
+
+    return web3_provider_service.get_provider(network)
 
 
 def load_contract_abi(abi_path: str) -> List[Dict[str, Any]]:
