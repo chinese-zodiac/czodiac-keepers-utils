@@ -63,6 +63,45 @@ The calculator returns a list with two values:
 1. `_amount`: The randomly generated amount with decimals applied
 2. `_minAmountOut`: Always set to 0 as per requirements
 
+### USDT → CZUSD → TokenBurningAndLP Workflow Calculator
+
+The `usdt_to_czusd_to_tokenburningandlp_workflow.py` calculator prepares
+arguments for the TidalDex router's `swapExactTokensForTokens` method. It:
+
+1. Reads the relayer's USDT balance and enforces a minimum batch size
+2. Randomly chooses a swap amount within configured bounds (50–150 USDT by default)
+3. Confirms sufficient USDT allowance for the router
+4. Quotes the trade via `getAmountsOut` and applies a 2% max slippage constraint
+5. Directs CZUSD output to the `TokenBurningAndLP` contract with a configurable deadline
+
+#### Input Parameters
+
+| Parameter              | Type        | Description                                      | Default  |
+| ---------------------- | ----------- | ------------------------------------------------ | -------- |
+| `network`              | Network     | Target blockchain network                        | BSC      |
+| `usdt_token_address`   | string      | Address of the USDT token                        | Required |
+| `czusd_token_address`  | string      | Address of the CZUSD token                       | Required |
+| `router_address`       | string      | Address of the TidalDex router                   | Required |
+| `target_address`       | string      | Destination address for the CZUSD proceeds       | Required |
+| `min_swap_amount`      | decimal str | Minimum USDT amount per batch                    | 50       |
+| `max_swap_amount`      | decimal str | Maximum USDT amount per batch                    | 150      |
+| `max_slippage_percent` | decimal str | Maximum acceptable slippage percentage           | 2        |
+| `deadline_seconds`     | integer     | Seconds until trade expiry                       | 600      |
+| `random_precision`     | integer     | Decimal precision for random amount selection    | 2        |
+| `decimals`             | integer     | Token decimals (USDT on BSC uses 18)             | 18       |
+| `relayer_address`      | string      | Optional override for the relayer wallet address | Derived  |
+
+#### Return Values
+
+The calculator returns a list with five values in the order expected by
+`swapExactTokensForTokens`:
+
+1. `_amountIn`: USDT input amount (integer in wei)
+2. `_amountOutMin`: Minimum CZUSD output amount after slippage guard
+3. `_path`: Swap path `[USDT, CZUSD]`
+4. `_to`: Destination address (`TokenBurningAndLP` contract)
+5. `_deadline`: Unix timestamp after which the transaction reverts
+
 ## Creating New Calculators
 
 To create a new custom argument calculator:

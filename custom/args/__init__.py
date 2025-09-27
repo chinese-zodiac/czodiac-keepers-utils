@@ -42,7 +42,6 @@ def import_calculator(module_path: str) -> Any:
         The imported module
     """
     import importlib.util
-    import os
     import sys
     from pathlib import Path
     
