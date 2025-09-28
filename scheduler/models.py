@@ -2,6 +2,7 @@
 Data models for contract job scheduling.
 """
 
+from datetime import time
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, validator, model_validator
@@ -77,6 +78,26 @@ class ContractJobCustomArgs(ContractJob):
     method_args: Optional[List[Any]] = None
 
 
+class TimeWindow(BaseModel):
+    """Model representing an allowed daily UTC time window."""
+
+    start: time
+    end: time
+
+    @model_validator(mode="after")
+    def validate_window(self) -> "TimeWindow":
+        """Ensure the time window has distinct boundaries."""
+        if self.start == self.end:
+            raise ValueError("Time window start and end times cannot be identical")
+        return self
+
+    def contains(self, value: time) -> bool:
+        """Return True when the provided time value lies within the window."""
+        if self.start <= self.end:
+            return self.start <= value <= self.end
+        return value >= self.start or value <= self.end
+
+
 class ContractJobMulti(BaseModel):
     """
     Model representing a scheduled execution of multiple contract method calls in sequence.
@@ -92,6 +113,7 @@ class ContractJobMulti(BaseModel):
         stop_on_failure: If True, stops execution when any job fails; if False, continues with remaining jobs
         delay_between_jobs: Optional delay in seconds between job executions
         retry_config: Configuration for retry attempts (applies to the entire multi-job)
+        allowed_time_windows: Optional list of allowed daily UTC time windows for execution
     """
     name: str
     jobs: List[Union[ContractJob, ContractJobCustomArgs]]
@@ -100,6 +122,7 @@ class ContractJobMulti(BaseModel):
     stop_on_failure: bool = True
     delay_between_jobs: Optional[float] = None
     retry_config: Optional[Dict[str, Any]] = None
+    allowed_time_windows: Optional[List[TimeWindow]] = None
     
     @validator("jobs")
     def validate_jobs_not_empty(cls, v: List[Union[ContractJob, ContractJobCustomArgs]]) -> List[Union[ContractJob, ContractJobCustomArgs]]:

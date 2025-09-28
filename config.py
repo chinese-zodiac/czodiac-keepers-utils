@@ -2,7 +2,9 @@
 Sample job configuration for the Web3 Contract Scheduler.
 """
 
-from scheduler.models import ContractJob, ContractJobCustomArgs, Network, ContractJobMulti
+from datetime import time
+
+from scheduler.models import ContractJob, ContractJobCustomArgs, Network, ContractJobMulti, TimeWindow
 
 Cl8yChartBoostV2 = ContractJob(
     name="Cl8yChartBoostV2",
@@ -123,6 +125,10 @@ JOBS = [
             "max_retries": 3,
             "retry_delay": 60
         },
+        allowed_time_windows=[
+            TimeWindow(start=time(hour=22, minute=0), end=time(hour=23, minute=59, second=59)),
+            TimeWindow(start=time(hour=0, minute=0), end=time(hour=12, minute=0)),
+        ],
     ),
     
     # GemBurnerV3 weekly performUpkeep job

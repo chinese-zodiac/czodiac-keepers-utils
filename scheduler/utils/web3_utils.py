@@ -4,6 +4,7 @@ Utility functions for Web3 interactions.
 
 import json
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 import logging
@@ -14,7 +15,7 @@ from web3.contract import Contract
 from web3.types import TxParams, Wei
 from web3.exceptions import ContractLogicError, TransactionNotFound
 
-from ..models import Network, ContractJob, ContractJobCustomArgs, ContractJobMulti, AnyJob
+from ..models import Network, ContractJob, ContractJobCustomArgs, ContractJobMulti, AnyJob, TimeWindow
 from ..config import get_private_key, TRANSACTION_CONFIG
 from .web3_service import web3_provider_service
 
@@ -354,6 +355,27 @@ def execute_contract_method(job: ContractJob) -> Tuple[bool, Optional[str], Opti
         return False, None, str(e)
 
 
+def _check_time_windows(allowed_time_windows: Optional[List[TimeWindow]]) -> Tuple[bool, Optional[str]]:
+    """
+    Validate that the current UTC time falls within at least one allowed window.
+
+    Args:
+        allowed_time_windows: List of permitted daily UTC windows.
+
+    Returns:
+        Tuple with a boolean flag indicating allowance and optional reason when disallowed.
+    """
+    if not allowed_time_windows:
+        return True, None
+
+    now_utc = datetime.now(timezone.utc).time().replace(tzinfo=None)
+    for window in allowed_time_windows:
+        if window.contains(now_utc):
+            return True, None
+
+    return False, f"Current UTC time {now_utc.strftime('%H:%M:%S')} is outside allowed windows"
+
+
 def execute_multi_job(multi_job: ContractJobMulti) -> Tuple[bool, List[Tuple[str, bool, Optional[str], Optional[str]]], Optional[str]]:
     """
     Execute multiple contract jobs in sequence.
@@ -371,6 +393,15 @@ def execute_multi_job(multi_job: ContractJobMulti) -> Tuple[bool, List[Tuple[str
     overall_success = True
     
     try:
+        is_allowed, reason = _check_time_windows(multi_job.allowed_time_windows)
+        if not is_allowed:
+            logger.info(
+                "Skipping multi-job '%s' because current time is outside allowed windows: %s",
+                multi_job.name,
+                reason,
+            )
+            return True, job_results, reason
+
         for i, job in enumerate(multi_job.jobs):
             if not job.enabled:
                 logger.info(f"Skipping disabled job: {job.name}")
