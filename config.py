@@ -126,7 +126,7 @@ JOBS = [
             "retry_delay": 60
         },
         allowed_time_windows=[
-            TimeWindow(start=time(hour=1, minute=0), end=time(hour=12, minute=0)),
+            TimeWindow(start=time(hour=3, minute=10), end=time(hour=12, minute=45)),
         ],
     ),
     
