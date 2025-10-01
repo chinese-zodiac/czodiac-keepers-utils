@@ -6,7 +6,20 @@ argument calculators for ContractJobCustomArgs jobs.
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Sequence, Union
+
+
+@dataclass
+class CalculatorResult:
+    """Normalized response returned by argument calculators."""
+
+    args: Optional[List[Any]] = None
+    noop: bool = False
+    reason: Optional[str] = None
+
+
+CalculatorReturn = Union[Sequence[Any], CalculatorResult]
 
 
 class ArgumentCalculator(ABC):
@@ -18,7 +31,7 @@ class ArgumentCalculator(ABC):
     """
     
     @abstractmethod
-    def calculate_args(self, input_data: Optional[Dict[str, Any]] = None) -> List[Any]:
+    def calculate_args(self, input_data: Optional[Dict[str, Any]] = None) -> CalculatorReturn:
         """
         Calculate arguments for a contract method call.
         
@@ -26,7 +39,7 @@ class ArgumentCalculator(ABC):
             input_data: Optional input data provided by the job configuration
             
         Returns:
-            List of arguments to pass to the contract method
+            CalculatorResult or sequence of arguments for the contract method.
         """
         pass
 

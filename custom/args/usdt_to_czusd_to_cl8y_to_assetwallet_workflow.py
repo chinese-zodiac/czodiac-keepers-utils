@@ -1,6 +1,5 @@
 """USDT to CZUSD workflow argument calculator."""
 
-import logging
 import random
 import time
 from decimal import Decimal, ROUND_DOWN, getcontext
@@ -10,6 +9,7 @@ from web3 import Web3
 from web3.exceptions import ContractLogicError
 
 from scheduler.config import TRANSACTION_CONFIG, get_private_key
+from scheduler.utils.logging_utils import setup_logging
 from scheduler.models import Network
 from scheduler.utils.web3_utils import (
     get_web3_provider,
@@ -17,10 +17,13 @@ from scheduler.utils.web3_utils import (
     wait_for_transaction_receipt,
 )
 
-from . import ArgumentCalculator
+from . import ArgumentCalculator, CalculatorResult
 
 
 getcontext().prec = 78
+
+
+logger = setup_logging(__name__)
 
 
 class UsdtToCzusdToCl8yToAssetwalletWorkflowCalculator(ArgumentCalculator):
@@ -29,7 +32,7 @@ class UsdtToCzusdToCl8yToAssetwalletWorkflowCalculator(ArgumentCalculator):
     ERC20_ABI_PATH: str = "abis/ERC20.json"
     ROUTER_ABI_PATH: str = "abis/TidalDexRouter.json"
 
-    def calculate_args(self, input_data: Optional[Dict[str, Any]] = None) -> List[Any]:
+    def calculate_args(self, input_data: Optional[Dict[str, Any]] = None) -> CalculatorResult:
         """
         Prepare `swapExactTokensForTokens` parameters for TidalDex router.
 
@@ -46,8 +49,6 @@ class UsdtToCzusdToCl8yToAssetwalletWorkflowCalculator(ArgumentCalculator):
         Raises:
             ValueError: If required configuration is missing or execution preconditions fail.
         """
-
-        logger = logging.getLogger(__name__)
 
         if not input_data:
             raise ValueError("Workflow configuration is required")
@@ -92,9 +93,12 @@ class UsdtToCzusdToCl8yToAssetwalletWorkflowCalculator(ArgumentCalculator):
         )
 
         if balance_decimal < min_swap_amount:
-            raise ValueError(
-                f"USDT balance {balance_decimal:.4f} below minimum batch size {min_swap_amount:.4f}"
+            reason = (
+                "USDT balance "
+                f"{balance_decimal:.4f} below minimum batch size {min_swap_amount:.4f}"
             )
+            logger.info("Returning noop: %s", reason)
+            return CalculatorResult(args=None, noop=True, reason=reason)
 
         max_available_decimal = min(balance_decimal, max_swap_amount)
 
@@ -138,7 +142,7 @@ class UsdtToCzusdToCl8yToAssetwalletWorkflowCalculator(ArgumentCalculator):
         return [swap_amount_wei, min_amount_out, path, target_address, deadline]
 
 
-def calculate_args(input_data: Optional[Dict[str, Any]] = None) -> List[Any]:
+def calculate_args(input_data: Optional[Dict[str, Any]] = None) -> CalculatorResult:
     """Proxy function exposing calculator for `ContractJobCustomArgs`."""
 
     calculator = UsdtToCzusdToCl8yToAssetwalletWorkflowCalculator()

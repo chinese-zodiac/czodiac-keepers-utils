@@ -19,6 +19,14 @@ from ..models import Network, ContractJob, ContractJobCustomArgs, ContractJobMul
 from ..config import get_private_key, TRANSACTION_CONFIG
 from .web3_service import web3_provider_service
 
+
+class JobNoOp(Exception):
+    """Raised when a job should be skipped without error."""
+
+    def __init__(self, reason: Optional[str] = None) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
 logger = logging.getLogger(__name__)
 
 
@@ -70,7 +78,7 @@ def get_contract_instance(
     return contract
 
 
-def calculate_custom_args(job: ContractJobCustomArgs) -> List[Any]:
+def calculate_custom_args(job: ContractJobCustomArgs) -> Tuple[bool, Optional[List[Any]], Optional[str]]:
     """
     Calculate custom arguments for a contract method call.
     
@@ -101,10 +109,40 @@ def calculate_custom_args(job: ContractJobCustomArgs) -> List[Any]:
         
         # Calculate the arguments
         args = calculator_func(job.args_input)
-        
-        logger.info(f"Calculated custom arguments for job '{job.name}': {args}")
-        
-        return args
+
+        noop = False
+        reason = None
+
+        if isinstance(args, dict):
+            arg_list = args.get("args")
+            noop = bool(args.get("noop"))
+            reason = args.get("reason")
+        elif isinstance(args, (list, tuple)):
+            arg_list = list(args)
+        else:
+            from custom.args import CalculatorResult
+
+            if isinstance(args, CalculatorResult):
+                arg_list = list(args.args or []) if args.args is not None else None
+                noop = args.noop
+                reason = args.reason
+            else:
+                raise TypeError("Calculator must return args sequence or CalculatorResult")
+
+        if noop:
+            logger.info(
+                "Custom args calculator for job '%s' returned noop%s",
+                job.name,
+                f": {reason}" if reason else "",
+            )
+            return False, None, reason
+
+        if arg_list is None:
+            raise ValueError("Calculator returned no arguments without noop flag")
+
+        logger.info(f"Calculated custom arguments for job '{job.name}': {arg_list}")
+
+        return True, arg_list, None
         
     except Exception as e:
         logger.exception(f"Error calculating custom arguments: {str(e)}")
@@ -249,7 +287,17 @@ def execute_contract_method(job: ContractJob) -> Tuple[bool, Optional[str], Opti
         method_args = job.method_args
         if isinstance(job, ContractJobCustomArgs):
             try:
-                method_args = calculate_custom_args(job)
+                calculated, calculated_args, skip_reason = calculate_custom_args(job)
+                if not calculated:
+                    raise JobNoOp(skip_reason)
+                method_args = calculated_args
+            except JobNoOp as exc:
+                logger.info(
+                    "Skipping job '%s' because calculator returned noop%s",
+                    job.name,
+                    f": {exc.reason}" if exc.reason else "",
+                )
+                return True, None, exc.reason
             except Exception as e:
                 logger.error(f"Failed to calculate custom arguments: {str(e)}")
                 return False, None, f"Failed to calculate custom arguments: {str(e)}"
