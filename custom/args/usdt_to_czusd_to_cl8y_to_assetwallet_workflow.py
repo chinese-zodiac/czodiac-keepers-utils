@@ -1,5 +1,6 @@
 """USDT to CZUSD workflow argument calculator."""
 
+import logging
 import random
 import time
 from decimal import Decimal, ROUND_DOWN, getcontext
@@ -9,7 +10,6 @@ from web3 import Web3
 from web3.exceptions import ContractLogicError
 
 from scheduler.config import TRANSACTION_CONFIG, get_private_key
-from scheduler.utils.logging_utils import setup_logging
 from scheduler.models import Network
 from scheduler.utils.web3_utils import (
     get_web3_provider,
@@ -21,9 +21,6 @@ from . import ArgumentCalculator, CalculatorResult
 
 
 getcontext().prec = 78
-
-
-logger = setup_logging(__name__)
 
 
 class UsdtToCzusdToCl8yToAssetwalletWorkflowCalculator(ArgumentCalculator):
@@ -86,6 +83,7 @@ class UsdtToCzusdToCl8yToAssetwalletWorkflowCalculator(ArgumentCalculator):
 
         balance_raw = usdt_contract.functions.balanceOf(relayer_address).call()
         balance_decimal = _wei_to_decimal(balance_raw, decimals)
+        logger = logging.getLogger(__name__)
         logger.info(
             "Relayer USDT balance detected: %s (decimals=%s)",
             balance_decimal,
