@@ -89,7 +89,7 @@ def get_transaction_config() -> TransactionConfig:
     """
     return TransactionConfig(
         default_gas_limit=int(os.getenv("DEFAULT_GAS_LIMIT", "200000")),
-        default_gas_price=int(os.getenv("DEFAULT_GAS_PRICE", "100000000")) or None,
+        default_gas_price=int(os.getenv("DEFAULT_GAS_PRICE", "50000000")) or None,
         gas_price_multiplier=float(os.getenv("GAS_PRICE_MULTIPLIER", "1.0")),
         max_retries=int(os.getenv("MAX_RETRIES", "3")),
         retry_delay=int(os.getenv("RETRY_DELAY", "30")),
