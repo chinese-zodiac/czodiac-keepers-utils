@@ -88,10 +88,10 @@ JOBS = [
             Cl8yChartBoostV2,
             ContractJobCustomArgs(
                 name="Conduct buy, burn, and LP",
-                    network=Network.BSC,
-                    contract_address="0x4a395302C16a13baC55f739ee95647887e48d655",  # TokenBurningAndLP contract
-                    contract_abi_path="abis/TokenBurningAndLP.json",
-                    method_name="swapBaseTokenForSubjectToken",
+                network=Network.BSC,
+                contract_address="0x4a395302C16a13baC55f739ee95647887e48d655",  # TokenBurningAndLP contract
+                contract_abi_path="abis/TokenBurningAndLP.json",
+                method_name="swapBaseTokenForSubjectToken",
                 args_module_path="token_burning_swap",
                 args_input={
                     # Address of the token burning contract which holds the base tokens
@@ -106,7 +106,7 @@ JOBS = [
                     # Network for web3 provider (defaults to BSC if not specified)
                     "network": Network.BSC
                 },
-                gas_limit=350000,
+                gas_limit=650000,
                 enabled=True,
                 # Validate transaction would succeed before sending
                 validate_before_send=True,
