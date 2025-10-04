@@ -56,7 +56,7 @@ JOBS = [
         contract_address="0x71aB950a0C349103967e711b931c460E9580c631",
         contract_abi_path="abis/TidalDexRouter.json",
         method_name="swapExactTokensForTokens",
-        schedule="every 10 to 20 seconds",
+        schedule="every 10 to 15 seconds",
         args_module_path="usdt_to_czusd_to_cl8y_to_assetwallet_workflow",
         args_input={
             "network": Network.BSC,
@@ -66,7 +66,7 @@ JOBS = [
             "router_address": "0x71aB950a0C349103967e711b931c460E9580c631",
             "target_address": "0xfac4c56258941d445afda6bb2fa87b493a65b8a1",
             "min_swap_amount": "10",
-            "max_swap_amount": "35",
+            "max_swap_amount": "85",
             "max_slippage_percent": "1",
             "deadline_seconds": 600,
             "random_precision": 4,
