@@ -16,7 +16,7 @@ Cl8yChartBoostV2 = ContractJob(
         "0x8F452a1fdd388A45e1080992eFF051b4dd9048d2"
     ],
     schedule="every 3 to 5 hours",
-    gas_limit=650000,
+    gas_limit=850000,
     enabled=True,
     validate_before_send=True,
     retry_config={
@@ -106,7 +106,7 @@ JOBS = [
                     # Network for web3 provider (defaults to BSC if not specified)
                     "network": Network.BSC
                 },
-                gas_limit=650000,
+                gas_limit=850000,
                 enabled=True,
                 # Validate transaction would succeed before sending
                 validate_before_send=True,
